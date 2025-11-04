@@ -1,8 +1,9 @@
 version: '3.8'
 services:
-  dca-entry-discord-bot:
-    image: imluky/dca-entry-discord-bot:latest
-    container_name: dca-entry-discord-bot
+  # Bot DCA - Service principal
+  dca-bot:
+    image: imluky/dca-entry-discord-bot:v2
+    container_name: dca-bot
     restart: unless-stopped
     volumes:
       - ./config.yaml:/app/config.yaml:ro
@@ -10,8 +11,29 @@ services:
     environment:
       - TZ=UTC
       - DEV=false  # "false" = 1x par jour, "true" = 1x par minute
+    command: python bot_daily_score_v2.py
     tmpfs:
       - /tmp:rw,size=64m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+  
+  # Interface Web d'Administration
+  dca-web:
+    image: imluky/dca-entry-discord-bot:v2
+    container_name: dca-web
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./data:/data
+    environment:
+      - TZ=UTC
+      - SECRET_KEY=${SECRET_KEY:-changeme-in-production}
+    command: python web_app.py
     logging:
       driver: json-file
       options:

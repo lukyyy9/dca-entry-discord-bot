@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>📊 Gestion des Tickers</h2>
+    
+    <h3 style="color: #58a6ff; margin-bottom: 15px;">Tickers surveillés</h3>
+    
+    {% if tickers %}
+    <table>
+        <thead>
+            <tr>
+                <th>Symbole</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for ticker in tickers %}
+            <tr>
+                <td><strong>{{ ticker }}</strong></td>
+                <td>
+                    <form method="POST" style="display: inline;">
+                        <input type="hidden" name="action" value="remove">
+                        <input type="hidden" name="symbol" value="{{ ticker }}">
+                        <button type="submit" class="btn btn-danger btn-sm" 
+                                onclick="return confirm('Supprimer {{ ticker }} ?')">
+                            🗑️ Supprimer
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #8b949e;">Aucun ticker configuré</p>
+    {% endif %}
+    
+    <h3 style="margin-top: 30px; color: #58a6ff;">Ajouter un ticker</h3>
+    <form method="POST">
+        <input type="hidden" name="action" value="add">
+        <div class="form-group">
+            <label for="symbol">Symbole du ticker</label>
+            <input type="text" id="symbol" name="symbol" required 
+                   placeholder="Ex: PSP5.PA, SXRT.DE, AAPL"
+                   style="text-transform: uppercase;">
+            <small style="color: #8b949e;">
+                Utilisez les symboles Yahoo Finance (ex: PSP5.PA pour CAC40, AAPL pour Apple)
+            </small>
+        </div>
+        <button type="submit" class="btn">➕ Ajouter</button>
+    </form>
+</div>
+{% endblock %}

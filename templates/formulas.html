@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>🧮 Formules de Calcul</h2>
+    
+    <p style="color: #8b949e; margin-bottom: 20px;">
+        Personnalisez les formules de calcul des scores. Utilisez les variables disponibles 
+        et les fonctions numpy (np). <strong>Attention:</strong> des formules incorrectes peuvent 
+        casser le système !
+    </p>
+    
+    <h3 style="margin-top: 30px; color: #58a6ff;">Formules par défaut</h3>
+    <table style="margin-bottom: 30px;">
+        <thead>
+            <tr>
+                <th>Composant</th>
+                <th>Formule par défaut</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for name, formula in default_formulas.items() %}
+            <tr>
+                <td><code>{{ name }}</code></td>
+                <td><code>{{ formula }}</code></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <h3 style="color: #58a6ff;">Formules personnalisées actives</h3>
+    {% if formulas %}
+    <table>
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Formule</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for name, formula in formulas.items() %}
+            <tr>
+                <td><code>{{ name }}</code></td>
+                <td><code>{{ formula }}</code></td>
+                <td>
+                    <form method="POST" style="display: inline;">
+                        <input type="hidden" name="action" value="delete">
+                        <input type="hidden" name="name" value="{{ name }}">
+                        <button type="submit" class="btn btn-danger" 
+                                onclick="return confirm('Supprimer cette formule ?')">
+                            🗑️ Supprimer
+                        </button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #8b949e;">Aucune formule personnalisée. Les formules par défaut sont utilisées.</p>
+    {% endif %}
+    
+    <h3 style="margin-top: 30px; color: #58a6ff;">Ajouter une formule personnalisée</h3>
+    <form method="POST">
+        <input type="hidden" name="action" value="add">
+        
+        <div class="form-group">
+            <label for="name">Nom du composant</label>
+            <select id="name" name="name" required>
+                <option value="drawdown">Drawdown</option>
+                <option value="rsi">RSI</option>
+                <option value="dist_ma50">Distance MA50</option>
+                <option value="momentum">Momentum</option>
+                <option value="trend_ma200">Trend MA200</option>
+                <option value="volatility">Volatilité</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="formula">Formule (Python)</label>
+            <textarea id="formula" name="formula" rows="3" required 
+                      placeholder="Ex: np.clip((70.0 - rsi) / 40.0, 0.0, 1.0)"></textarea>
+            <small style="color: #8b949e;">
+                Variables disponibles: drawdown, cap, rsi, close, ma50, ma200, momentum, vol20<br>
+                Fonctions disponibles: np (numpy), min, max, exp
+            </small>
+        </div>
+        
+        <div class="form-group">
+            <label for="description">Description (optionnel)</label>
+            <input type="text" id="description" name="description" 
+                   placeholder="Description de la formule">
+        </div>
+        
+        <button type="submit" class="btn">➕ Ajouter la formule</button>
+    </form>
+</div>
+{% endblock %}

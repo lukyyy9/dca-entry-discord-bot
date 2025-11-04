@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>⚙️ Configuration du Bot</h2>
+    
+    <form method="POST">
+        <div class="form-group">
+            <label for="webhook_url">URL du Webhook Discord</label>
+            <input type="text" id="webhook_url" name="webhook_url" 
+                   value="{{ config.webhook_url }}" required>
+            <small style="color: #8b949e;">URL du webhook Discord pour envoyer les notifications</small>
+        </div>
+        
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="dev_mode" {% if config.dev_mode %}checked{% endif %}>
+                Mode Développement (exécution toutes les minutes au lieu de 22:10 UTC)
+            </label>
+        </div>
+        
+        <div class="form-group">
+            <label for="data_period">Période historique</label>
+            <select id="data_period" name="data_period">
+                <option value="180d" {% if config.data_period == '180d' %}selected{% endif %}>6 mois</option>
+                <option value="365d" {% if config.data_period == '365d' %}selected{% endif %}>1 an</option>
+                <option value="730d" {% if config.data_period == '730d' %}selected{% endif %}>2 ans</option>
+                <option value="1825d" {% if config.data_period == '1825d' %}selected{% endif %}>5 ans</option>
+            </select>
+        </div>
+        
+        <div class="form-group">
+            <label for="drawdown_cap">Cap Drawdown</label>
+            <input type="number" id="drawdown_cap" name="drawdown_cap" 
+                   step="0.01" min="0" max="1" value="{{ config.drawdown_cap }}">
+            <small style="color: #8b949e;">Valeur de normalisation pour le drawdown (0-1)</small>
+        </div>
+        
+        <div class="form-group">
+            <label for="volatility_cap">Cap Volatilité</label>
+            <input type="number" id="volatility_cap" name="volatility_cap" 
+                   step="0.01" min="0" max="1" value="{{ config.volatility_cap }}">
+            <small style="color: #8b949e;">Valeur de normalisation pour la volatilité (0-1)</small>
+        </div>
+        
+        <button type="submit" class="btn">💾 Sauvegarder</button>
+    </form>
+</div>
+{% endblock %}

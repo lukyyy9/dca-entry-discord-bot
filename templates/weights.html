@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>⚖️ Gestion des Poids</h2>
+    
+    <p style="color: #8b949e; margin-bottom: 20px;">
+        Les poids déterminent l'importance de chaque composant dans le score final. 
+        La somme doit être égale à 1.0.
+    </p>
+    
+    <form method="POST">
+        <div class="grid">
+            <div class="form-group">
+                <label for="drawdown90">Drawdown 90j</label>
+                <input type="number" id="drawdown90" name="drawdown90" 
+                       step="0.01" min="0" max="1" value="{{ weights.drawdown90 }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="rsi14">RSI 14j</label>
+                <input type="number" id="rsi14" name="rsi14" 
+                       step="0.01" min="0" max="1" value="{{ weights.rsi14 }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="dist_ma50">Distance MA50</label>
+                <input type="number" id="dist_ma50" name="dist_ma50" 
+                       step="0.01" min="0" max="1" value="{{ weights.dist_ma50 }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="momentum30">Momentum 30j</label>
+                <input type="number" id="momentum30" name="momentum30" 
+                       step="0.01" min="0" max="1" value="{{ weights.momentum30 }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="trend_ma200">Trend MA200</label>
+                <input type="number" id="trend_ma200" name="trend_ma200" 
+                       step="0.01" min="0" max="1" value="{{ weights.trend_ma200 }}">
+            </div>
+            
+            <div class="form-group">
+                <label for="volatility20">Volatilité 20j</label>
+                <input type="number" id="volatility20" name="volatility20" 
+                       step="0.01" min="0" max="1" value="{{ weights.volatility20 }}">
+            </div>
+        </div>
+        
+        <div class="stat" style="margin: 20px 0;">
+            <div class="stat-value">{{ total|round(2) }}</div>
+            <div class="stat-label">Total (doit être = 1.0)</div>
+        </div>
+        
+        <button type="submit" class="btn">💾 Sauvegarder les poids</button>
+    </form>
+</div>
+{% endblock %}

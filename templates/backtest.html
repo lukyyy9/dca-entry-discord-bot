@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>🔬 Backtesting</h2>
+    
+    <p style="color: #8b949e; margin-bottom: 20px;">
+        Testez la performance historique de votre stratégie de scoring sur les données passées.
+    </p>
+    
+    <form method="POST">
+        <div class="form-group">
+            <label>Sélectionnez les tickers à backtester</label>
+            {% for ticker in tickers %}
+            <div>
+                <label>
+                    <input type="checkbox" name="tickers" value="{{ ticker }}" checked>
+                    {{ ticker }}
+                </label>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="grid">
+            <div class="form-group">
+                <label for="start_date">Date de début</label>
+                <input type="date" id="start_date" name="start_date" 
+                       value="{{ start_date }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="end_date">Date de fin</label>
+                <input type="date" id="end_date" name="end_date" 
+                       value="{{ end_date }}" required>
+            </div>
+        </div>
+        
+        <button type="submit" class="btn">🚀 Lancer le backtest</button>
+    </form>
+</div>
+
+<div class="card">
+    <h3 style="color: #58a6ff;">ℹ️ Comment ça fonctionne ?</h3>
+    <p style="color: #8b949e;">
+        Le backtest simule des signaux d'achat hebdomadaires basés sur votre score actuel,
+        puis calcule le rendement à 30 jours pour chaque signal. Cela permet d'évaluer
+        la pertinence de votre stratégie de scoring.
+    </p>
+    <ul style="color: #8b949e; line-height: 2;">
+        <li><strong>Score > 55:</strong> Signal favorable (opportunité d'achat)</li>
+        <li><strong>Score 45-55:</strong> Signal neutre</li>
+        <li><strong>Score < 45:</strong> Signal défavorable</li>
+    </ul>
+</div>
+{% endblock %}

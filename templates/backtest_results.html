@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="card">
+    <h2>📊 Résultats du Backtest</h2>
+    
+    <p style="color: #8b949e;">
+        Backtest du {{ start_date }} au {{ end_date }} pour: 
+        <strong>{{ tickers|join(', ') }}</strong>
+    </p>
+</div>
+
+{% if analyses._global %}
+<div class="card">
+    <h3 style="color: #58a6ff;">📈 Analyse Globale</h3>
+    
+    <div class="grid">
+        <div class="stat">
+            <div class="stat-value">{{ analyses._global.global.total_signals }}</div>
+            <div class="stat-label">Signaux totaux</div>
+        </div>
+        
+        <div class="stat">
+            <div class="stat-value score-{% if analyses._global.global.mean_return > 0 %}good{% else %}bad{% endif %}">
+                {{ analyses._global.global.mean_return }}%
+            </div>
+            <div class="stat-label">Rendement moyen à 30j</div>
+        </div>
+        
+        <div class="stat">
+            <div class="stat-value">{{ analyses._global.global.success_rate }}%</div>
+            <div class="stat-label">Taux de succès</div>
+        </div>
+        
+        <div class="stat">
+            <div class="stat-value">{{ analyses._global.correlation }}</div>
+            <div class="stat-label">Corrélation score/rendement</div>
+        </div>
+    </div>
+</div>
+
+{% if analyses._global.favorable %}
+<div class="card">
+    <h3 style="color: #3fb950;">✅ Signaux Favorables (Score > 55)</h3>
+    
+    <div class="grid">
+        <div class="stat">
+            <div class="stat-value">{{ analyses._global.favorable.count }}</div>
+            <div class="stat-label">Nombre de signaux</div>
+        </div>
+        
+        <div class="stat">
+            <div class="stat-value score-good">{{ analyses._global.favorable.mean_return }}%</div>
+            <div class="stat-label">Rendement moyen</div>
+        </div>
+        
+        <div class="stat">
+            <div class="stat-value">{{ analyses._global.favorable.median_return }}%</div>
+            <div class="stat-label">Rendement médian</div>
+        </div>
+        
+        <div class="stat">
+            <div class="stat-value">{{ analyses._global.favorable.success_rate }}%</div>
+            <div class="stat-label">Taux de succès</div>
+        </div>
+    </div>
+    
+    <p style="margin-top: 15px; color: #8b949e;">
+        <strong>Meilleur:</strong> {{ analyses._global.favorable.max_return }}% | 
+        <strong>Pire:</strong> {{ analyses._global.favorable.min_return }}%
+    </p>
+</div>
+{% endif %}
+
+{% if analyses._global.unfavorable %}
+<div class="card">
+    <h3 style="color: #f85149;">❌ Signaux Défavorables (Score < 45)</h3>
+    
+    <div class="grid">
+        <div class="stat">
+            <div class="stat-value">{{ analyses._global.unfavorable.count }}</div>
+            <div class="stat-label">Nombre de signaux</div>
+        </div>
+        
+        <div class="stat">
+            <div class="stat-value score-bad">{{ analyses._global.unfavorable.mean_return }}%</div>
+            <div class="stat-label">Rendement moyen</div>
+        </div>
+        
+        <div class="stat">
+            <div class="stat-value">{{ analyses._global.unfavorable.median_return }}%</div>
+            <div class="stat-label">Rendement médian</div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
+<div class="card">
+    <h3 style="color: #58a6ff;">📋 Détails des Signaux</h3>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Ticker</th>
+                <th>Score</th>
+                <th>Prix</th>
+                <th>RSI</th>
+                <th>Rendement 30j</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for result in results[-100:] %}
+            <tr>
+                <td>{{ result.date.strftime('%Y-%m-%d') if result.date else 'N/A' }}</td>
+                <td><strong>{{ result.ticker }}</strong></td>
+                <td>
+                    <span class="{% if result.score >= 55 %}score-good{% elif result.score >= 45 %}score-warning{% else %}score-bad{% endif %}">
+                        {{ result.score }}
+                    </span>
+                </td>
+                <td>{{ result.close|round(2) }}</td>
+                <td>{{ result.rsi14 }}</td>
+                <td>
+                    <span class="{% if result.return_30d > 0 %}score-good{% else %}score-bad{% endif %}">
+                        {{ result.return_30d }}%
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    {% if results|length > 100 %}
+    <p style="margin-top: 15px; color: #8b949e;">
+        Affichage des 100 derniers signaux sur {{ results|length }} au total.
+        Consultez le fichier <code>/data/backtest_results.csv</code> pour voir tous les résultats.
+    </p>
+    {% endif %}
+</div>
+
+<div style="margin-top: 20px;">
+    <a href="{{ url_for('backtest_page') }}" class="btn btn-secondary">← Nouveau backtest</a>
+</div>
+{% endblock %}
