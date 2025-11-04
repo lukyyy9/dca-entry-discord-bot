@@ -1,0 +1,16 @@
+# Ignore les fichiers inutiles dans le build Docker
+data/
+*.log
+*.csv
+.git/
+.gitignore
+README.md
+README_INSTALL.md
+copilot.md
+.vscode/
+.idea/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.DS_Store

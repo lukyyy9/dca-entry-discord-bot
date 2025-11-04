@@ -1,0 +1,28 @@
+version: '3.8'
+services:
+  dca-bot:
+    build:
+      context: .
+      args:
+        BOT_UID: 1000
+        BOT_GID: 1000
+    container_name: casa_dca_bot
+    restart: unless-stopped
+    user: "1000:1000"
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./data:/data
+    environment:
+      - TZ=UTC
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:rw,size=64m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
