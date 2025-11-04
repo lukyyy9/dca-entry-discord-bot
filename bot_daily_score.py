@@ -150,6 +150,10 @@ def compute_scores_for_ticker(ticker: str, cfg: dict):
         logging.warning("Pas de données pour %s", ticker)
         return None
 
+    # FIX: Flatten multi-index columns if present
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = df.columns.get_level_values(0)
+    
     df = df.dropna().copy()
     df["MA50"] = df["Close"].rolling(50, min_periods=1).mean()
     df["MA200"] = df["Close"].rolling(200, min_periods=1).mean()
