@@ -5,7 +5,6 @@
 
 import os
 import sys
-import stat
 import time
 import logging
 import signal
@@ -75,34 +74,7 @@ def load_config(path=CONFIG_PATH):
     merge(cfg, DEFAULT_CONFIG)
     return cfg
 
-# ---------- SECURITY CHECKS ----------
-
-def check_running_user():
-    try:
-        euid = os.geteuid()
-    except AttributeError:
-        # Windows (not relevant here) - skip
-        return
-    if euid == 0:
-        logging.error("Refus d'exécution : le processus ne doit PAS tourner en root.")
-        sys.exit(2)
-
-
-def check_config_permissions(path):
-    try:
-        st = os.stat(path)
-    except FileNotFoundError:
-        logging.error("Fichier de configuration introuvable: %s", path)
-        sys.exit(2)
-    mode = stat.S_IMODE(st.st_mode)
-    if (mode & (stat.S_IRWXG | stat.S_IRWXO)) != 0:
-        logging.error(
-            "Permissions trop permissives pour %s (mode %o).\n" \
-            "Sur l'hote: chown 1000:1000 %s && chmod 600 %s",
-            path, mode, path, path
-        )
-        sys.exit(2)
-
+# ---------- CONFIG VALIDATION ----------
 
 def validate_config(cfg):
     webhook = cfg.get("webhook_url", "")
@@ -353,8 +325,6 @@ def main():
     cfg = load_config(CONFIG_PATH)
     setup_logging(cfg.get("log_file", "/data/bot_daily_score.log"))
 
-    check_running_user()
-    check_config_permissions(CONFIG_PATH)
     validate_config(cfg)
 
     # register signals

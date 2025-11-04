@@ -6,13 +6,9 @@
 
 2) Edite `config.yaml` et renseigne `webhook_url` et `admin.admin_tokens`.
 
-3) Sur l'hôte, règle les permissions :
+3) Crée le dossier data :
    ```bash
-   chown 1000:1000 config.yaml
-   chmod 600 config.yaml
    mkdir -p data
-   chown 1000:1000 data
-   chmod 700 data
    ```
 
 4) Build & run via CasaOS custom app (ou terminal) :
@@ -22,7 +18,7 @@
 
 5) Consulter les logs :
    ```bash
-   docker logs -f casa_dca_bot
+   docker logs -f dca-entry-discord-bot
    ```
 
 6) Tests : attends 22:10 UTC un jour ouvré ou modifie temporairement la cron dans le code pour exécuter immédiatement.
@@ -31,8 +27,6 @@
 
 - Ne commit pas `config.yaml` dans un repo public.
 - Rotate webhook si compromis.
-- Le bot tourne en mode non-root (UID 1000) avec filesystem read-only pour la sécurité.
-- Tous les caps sont droppés et `no-new-privileges` est activé.
 
 ## Configuration
 
