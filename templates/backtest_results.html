@@ -148,7 +148,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for result in results[-100:] %}
+                {% for result in results %}
                 <tr>
                     <td>{{ result.date.strftime('%Y-%m-%d') if result.date else 'N/A' }}</td>
                     <td><strong>{{ result.ticker }}</strong></td>
@@ -184,12 +184,9 @@
         </table>
     </div>
     
-    {% if results|length > 100 %}
     <p style="margin-top: 15px; color: #8b949e;">
-        Affichage des 100 derniers signaux sur {{ results|length }} au total.
-        Consultez le fichier <code>/data/backtest_results.csv</code> pour voir tous les résultats.
+        Affichage de {{ results|length }} signaux au total.
     </p>
-    {% endif %}
 </div>
 
 <div style="margin-top: 20px;">
