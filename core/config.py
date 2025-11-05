@@ -48,6 +48,29 @@ def init_database():
         )
     """)
     
+    # Table des profils de poids
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS weight_profiles (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT UNIQUE NOT NULL,
+            description TEXT,
+            is_active BOOLEAN DEFAULT 0,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+    
+    # Table des poids par profil
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS profile_weights (
+            profile_id INTEGER,
+            formula_name TEXT,
+            weight REAL DEFAULT 0.0,
+            FOREIGN KEY (profile_id) REFERENCES weight_profiles(id) ON DELETE CASCADE,
+            PRIMARY KEY (profile_id, formula_name)
+        )
+    """)
+    
     conn.commit()
     conn.close()
 
@@ -301,3 +324,183 @@ class ConfigManager:
             tickers = config.get("tickers", [])
         
         return tickers
+    
+    # === Gestion des profils de poids ===
+    
+    def create_weight_profile(self, name: str, description: str = "") -> int:
+        """Crée un nouveau profil de poids."""
+        conn = self._get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            INSERT INTO weight_profiles (name, description)
+            VALUES (?, ?)
+        """, (name, description))
+        
+        profile_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+        
+        return profile_id
+    
+    def get_weight_profiles(self) -> List[Dict]:
+        """Récupère tous les profils de poids."""
+        conn = self._get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, name, description, is_active, created_at, updated_at
+            FROM weight_profiles
+            ORDER BY name
+        """)
+        
+        profiles = []
+        for row in cursor.fetchall():
+            profiles.append({
+                'id': row[0],
+                'name': row[1],
+                'description': row[2],
+                'is_active': bool(row[3]),
+                'created_at': row[4],
+                'updated_at': row[5]
+            })
+        
+        conn.close()
+        return profiles
+    
+    def get_active_profile(self) -> Optional[Dict]:
+        """Récupère le profil actuellement actif."""
+        conn = self._get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT id, name, description, created_at, updated_at
+            FROM weight_profiles
+            WHERE is_active = 1
+            LIMIT 1
+        """)
+        
+        row = cursor.fetchone()
+        conn.close()
+        
+        if row:
+            return {
+                'id': row[0],
+                'name': row[1],
+                'description': row[2],
+                'created_at': row[3],
+                'updated_at': row[4]
+            }
+        return None
+    
+    def set_active_profile(self, profile_id: int):
+        """Définit le profil actif et charge ses poids dans les formules."""
+        conn = self._get_db_connection()
+        cursor = conn.cursor()
+        
+        # Désactiver tous les profils
+        cursor.execute("UPDATE weight_profiles SET is_active = 0")
+        
+        # Activer le profil sélectionné
+        cursor.execute("""
+            UPDATE weight_profiles 
+            SET is_active = 1, updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (profile_id,))
+        
+        # Charger les poids du profil et les appliquer aux formules
+        cursor.execute("""
+            SELECT formula_name, weight
+            FROM profile_weights
+            WHERE profile_id = ?
+        """, (profile_id,))
+        
+        for formula_name, weight in cursor.fetchall():
+            cursor.execute("""
+                UPDATE formulas 
+                SET weight = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE name = ?
+            """, (weight, formula_name))
+        
+        conn.commit()
+        conn.close()
+    
+    def save_profile_weights(self, profile_id: int, weights: Dict[str, float]):
+        """Sauvegarde les poids dans un profil."""
+        conn = self._get_db_connection()
+        cursor = conn.cursor()
+        
+        # Supprimer les anciens poids du profil
+        cursor.execute("DELETE FROM profile_weights WHERE profile_id = ?", (profile_id,))
+        
+        # Insérer les nouveaux poids
+        for formula_name, weight in weights.items():
+            cursor.execute("""
+                INSERT INTO profile_weights (profile_id, formula_name, weight)
+                VALUES (?, ?, ?)
+            """, (profile_id, formula_name, weight))
+        
+        # Mettre à jour la date de modification du profil
+        cursor.execute("""
+            UPDATE weight_profiles 
+            SET updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (profile_id,))
+        
+        conn.commit()
+        conn.close()
+    
+    def get_profile_weights(self, profile_id: int) -> Dict[str, float]:
+        """Récupère les poids d'un profil."""
+        conn = self._get_db_connection()
+        cursor = conn.cursor()
+        
+        cursor.execute("""
+            SELECT formula_name, weight
+            FROM profile_weights
+            WHERE profile_id = ?
+        """, (profile_id,))
+        
+        weights = {formula_name: weight for formula_name, weight in cursor.fetchall()}
+        conn.close()
+        
+        return weights
+    
+    def delete_weight_profile(self, profile_id: int):
+        """Supprime un profil de poids."""
+        conn = self._get_db_connection()
+        cursor = conn.cursor()
+        
+        # Les poids associés seront supprimés automatiquement (CASCADE)
+        cursor.execute("DELETE FROM weight_profiles WHERE id = ?", (profile_id,))
+        
+        conn.commit()
+        conn.close()
+    
+    def save_current_weights_to_profile(self, profile_id: int):
+        """Sauvegarde les poids actuels des formules dans un profil."""
+        formulas = self.get_formulas()
+        weights = {name: data['weight'] for name, data in formulas.items()}
+        self.save_profile_weights(profile_id, weights)
+    
+    def update_profile_info(self, profile_id: int, name: str = None, description: str = None):
+        """Met à jour les informations d'un profil."""
+        conn = self._get_db_connection()
+        cursor = conn.cursor()
+        
+        if name is not None:
+            cursor.execute("""
+                UPDATE weight_profiles 
+                SET name = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            """, (name, profile_id))
+        
+        if description is not None:
+            cursor.execute("""
+                UPDATE weight_profiles 
+                SET description = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+            """, (description, profile_id))
+        
+        conn.commit()
+        conn.close()

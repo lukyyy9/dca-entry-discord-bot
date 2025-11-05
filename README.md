@@ -140,6 +140,10 @@ Access the web interface at `http://localhost:5001`
 - **Dashboard**: Overview of current configuration and recent scores
 - **Tickers Management**: Add/remove ETFs and stocks to monitor (no config.yaml editing needed)
 - **Weights Configuration**: Adjust scoring component weights in real-time
+  - **Weight Profiles**: Save and manage multiple weight configurations
+  - Quickly switch between different testing profiles
+  - Create, edit, and delete profiles with descriptions
+  - One-click profile activation to load saved weights
 - **Formulas Editor**: Create and manage custom Python scoring formulas with syntax validation
 - **Configuration Editor**: Modify caps, periods, and other settings through the UI
 - **Backtest**: Historical performance analysis with visual charts and metrics
@@ -149,6 +153,30 @@ All configuration changes are stored in a SQLite database (`/data/bot_config.db`
 ### Authentication
 
 Use one of the admin tokens defined in `config.yaml` to access the interface.
+
+### 📁 Using Weight Profiles
+
+Weight profiles allow you to save and manage multiple weight configurations, making it easy to test different strategies:
+
+**Creating a Profile:**
+1. Navigate to the **Weights** page
+2. Click **➕ Nouveau Profil**
+3. Enter a name and description for your profile
+4. The current weights will be saved to the new profile
+
+**Managing Profiles:**
+- **✓ Activer**: Load the weights from this profile into the active configuration
+- **💾 Sauv.**: Save the current weights to this profile (overwrite)
+- **✏️**: Edit the profile name and description
+- **🗑️**: Delete the profile (only for inactive profiles)
+
+**Use Cases:**
+- **Conservative Profile**: Higher weights on drawdown and volatility for safer entries
+- **Aggressive Profile**: Focus on momentum and trend indicators
+- **Testing Profile**: Experiment with new weight distributions without losing your proven configuration
+- **Seasonal Profiles**: Different strategies for different market conditions
+
+**Note:** Only one profile can be active at a time. The active profile's weights are automatically loaded into the formulas.
 
 ## 🐳 Docker Configuration
 

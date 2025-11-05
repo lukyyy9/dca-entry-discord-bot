@@ -9,6 +9,57 @@
         La somme doit être égale à 1.0.
     </p>
     
+    <!-- Section des profils -->
+    <div style="background: #161b22; border: 1px solid #30363d; border-radius: 6px; padding: 20px; margin-bottom: 20px;">
+        <h3 style="margin-top: 0; display: flex; align-items: center; gap: 10px;">
+            📁 Profils de Poids
+            <button type="button" class="btn btn-secondary" onclick="showCreateProfileModal()" style="margin-left: auto; font-size: 0.9em;">
+                ➕ Nouveau Profil
+            </button>
+        </h3>
+        
+        {% if profiles %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 15px;">
+            {% for profile in profiles %}
+            <div class="profile-card {% if profile.is_active %}active-profile{% endif %}" id="profile-{{ profile.id }}" data-profile-id="{{ profile.id }}" data-active="{% if profile.is_active %}1{% else %}0{% endif %}">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                    <strong style="font-size: 1.1em;">{{ profile.name }}</strong>
+                    {% if profile.is_active %}
+                    <span style="background: #238636; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75em;">ACTIF</span>
+                    {% endif %}
+                </div>
+                
+                {% if profile.description %}
+                <p style="color: #8b949e; font-size: 0.9em; margin: 8px 0;">{{ profile.description }}</p>
+                {% endif %}
+                
+                <div style="display: flex; gap: 5px; margin-top: 12px; flex-wrap: wrap;">
+                        <!-- Formulaire d'activation (soumis quand l'utilisateur clique sur la carte) -->
+                        <form id="activate-form-{{ profile.id }}" method="POST" action="{{ url_for('activate_profile', profile_id=profile.id) }}" style="display: none;"></form>
+                    
+                    <button type="button" class="btn-mini btn-secondary" data-profile-id="{{ profile.id }}" data-profile-name="{{ profile.name|e }}" data-profile-description="{{ profile.description|e }}" onclick="event.stopPropagation(); showEditProfileModalFromButton(this)" title="Modifier">
+                        ✏️
+                    </button>
+                    
+                    {% if not profile.is_active %}
+                    <form method="POST" action="{{ url_for('delete_profile', profile_id=profile.id) }}" 
+                          onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce profil ?')" style="display: inline;">
+                        <button type="submit" class="btn-mini btn-danger" onclick="event.stopPropagation()" title="Supprimer">
+                            🗑️
+                        </button>
+                    </form>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color: #8b949e; font-style: italic; margin-top: 15px;">
+            Aucun profil créé. Créez un profil pour enregistrer une configuration de poids.
+        </p>
+        {% endif %}
+    </div>
+    
     {% if not formulas %}
     <div style="background: #382d1a; border: 1px solid #854d0e; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
         <p style="margin: 0; color: #fbbf24;">
@@ -100,6 +151,193 @@ document.addEventListener('DOMContentLoaded', function() {
         input.addEventListener('input', updateTotal);
     });
     updateTotal();
+    
+    // Attacher le clic sur les cartes de profil pour activer un profil
+    const profileCards = document.querySelectorAll('.profile-card');
+    profileCards.forEach(card => {
+        // rendre visuellement cliquable
+        card.style.cursor = 'pointer';
+        card.addEventListener('click', function(e) {
+            // n'activer que si le profil n'est pas déjà actif
+            if (card.dataset.active === '0') {
+                const form = document.getElementById('activate-form-' + card.dataset.profileId);
+                if (form) form.submit();
+            }
+        });
+    });
+});
+
+// Helper qui ouvre le modal d'édition depuis un bouton (évite les problèmes d'échappement dans les attributs)
+function showEditProfileModalFromButton(button) {
+    const id = button.dataset.profileId;
+    const name = button.dataset.profileName || '';
+    const desc = button.dataset.profileDescription || '';
+    showEditProfileModal(id, name, desc);
+}
+
+// === Modals pour les profils ===
+
+function showCreateProfileModal() {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h3>➕ Créer un nouveau profil</h3>
+            <form method="POST" action="{{ url_for('create_profile') }}">
+                <div style="margin-bottom: 15px;">
+                    <label for="profile_name" style="display: block; margin-bottom: 5px;">Nom du profil *</label>
+                    <input type="text" id="profile_name" name="profile_name" required 
+                           style="width: 100%; padding: 8px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label for="profile_description" style="display: block; margin-bottom: 5px;">Description</label>
+                    <textarea id="profile_description" name="profile_description" rows="3" 
+                              style="width: 100%; padding: 8px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9;"></textarea>
+                </div>
+                <p style="color: #8b949e; font-size: 0.9em; margin-bottom: 15px;">
+                    ℹ️ Les poids actuels seront sauvegardés dans ce nouveau profil.
+                </p>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal(this)">Annuler</button>
+                    <button type="submit" class="btn">Créer</button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('show'), 10);
+}
+
+function showEditProfileModal(profileId, profileName, profileDescription) {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <h3>✏️ Modifier le profil</h3>
+            <form method="POST" action="/profiles/${profileId}/update">
+                <div style="margin-bottom: 15px;">
+                    <label for="edit_profile_name" style="display: block; margin-bottom: 5px;">Nom du profil *</label>
+                    <input type="text" id="edit_profile_name" name="profile_name" required 
+                           value="${profileName}"
+                           style="width: 100%; padding: 8px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label for="edit_profile_description" style="display: block; margin-bottom: 5px;">Description</label>
+                    <textarea id="edit_profile_description" name="profile_description" rows="3" 
+                              style="width: 100%; padding: 8px; background: #0d1117; border: 1px solid #30363d; border-radius: 6px; color: #c9d1d9;">${profileDescription}</textarea>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" class="btn btn-secondary" onclick="closeModal(this)">Annuler</button>
+                    <button type="submit" class="btn">Mettre à jour</button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    setTimeout(() => modal.classList.add('show'), 10);
+}
+
+function closeModal(button) {
+    const modal = button.closest('.modal');
+    modal.classList.remove('show');
+    setTimeout(() => modal.remove(), 300);
+}
+
+// Fermer le modal en cliquant sur le fond
+document.addEventListener('click', function(e) {
+    if (e.target.classList.contains('modal')) {
+        closeModal(e.target.querySelector('button'));
+    }
 });
 </script>
+
+<style>
+/* Styles pour les profils */
+.profile-card {
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    padding: 15px;
+    transition: all 0.2s ease;
+}
+
+.profile-card:hover {
+    border-color: #58a6ff;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(88, 166, 255, 0.1);
+}
+
+.profile-card.active-profile {
+    border-color: #238636;
+    background: linear-gradient(135deg, #0d1117 0%, #0e2f1a 100%);
+}
+
+.btn-mini {
+    padding: 4px 8px;
+    font-size: 0.85em;
+    background: #238636;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-mini:hover {
+    background: #2ea043;
+}
+
+.btn-mini.btn-secondary {
+    background: #21262d;
+}
+
+.btn-mini.btn-secondary:hover {
+    background: #30363d;
+}
+
+.btn-mini.btn-danger {
+    background: #da3633;
+}
+
+.btn-mini.btn-danger:hover {
+    background: #f85149;
+}
+
+/* Styles pour le modal */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal.show {
+    opacity: 1;
+}
+
+.modal-content {
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+    padding: 25px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #c9d1d9;
+}
+</style>
 {% endblock %}

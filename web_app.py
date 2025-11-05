@@ -146,10 +146,17 @@ def weights_page():
             if abs(total - 1.0) > 0.01:
                 flash(f'La somme des poids doit être égale à 1.0 (actuellement: {total:.2f})', 'error')
             else:
-                # Mettre à jour les poids de chaque formule
+                # Mettre à jour les poids de chaque formule dans config.yaml
                 for name, weight in weights.items():
                     config_manager.set_formula_weight(name, weight)
-                flash('Poids mis à jour avec succès', 'success')
+                
+                # Sauvegarder aussi dans le profil actif (s'il y en a un)
+                active_profile = config_manager.get_active_profile()
+                if active_profile:
+                    config_manager.save_profile_weights(active_profile['id'], weights)
+                    flash(f'Poids mis à jour avec succès et sauvegardés dans le profil "{active_profile["name"]}"', 'success')
+                else:
+                    flash('Poids mis à jour avec succès', 'success')
         except Exception as e:
             flash(f'Erreur lors de la mise à jour: {str(e)}', 'error')
         
@@ -159,7 +166,12 @@ def weights_page():
     formulas = config_manager.get_formulas()
     total = sum(data['weight'] for data in formulas.values())
     
-    return render_template('weights.html', formulas=formulas, total=total)
+    # Récupérer les profils
+    profiles = config_manager.get_weight_profiles()
+    active_profile = config_manager.get_active_profile()
+    
+    return render_template('weights.html', formulas=formulas, total=total,
+                         profiles=profiles, active_profile=active_profile)
 
 
 @app.route('/formulas', methods=['GET', 'POST'])
@@ -333,6 +345,86 @@ def api_test_scoring():
     except Exception as e:
         logging.exception("Erreur lors du test de scoring")
         return jsonify({'error': str(e)}), 500
+
+
+# === Routes pour les profils de poids ===
+
+@app.route('/profiles/create', methods=['POST'])
+def create_profile():
+    """Créer un nouveau profil."""
+    try:
+        name = request.form.get('profile_name')
+        description = request.form.get('profile_description', '')
+        
+        if not name:
+            flash('Le nom du profil est requis', 'error')
+            return redirect(url_for('weights_page'))
+        
+        # Créer le profil
+        profile_id = config_manager.create_weight_profile(name, description)
+        
+        # Sauvegarder les poids actuels dans le nouveau profil
+        config_manager.save_current_weights_to_profile(profile_id)
+        
+        flash(f'Profil "{name}" créé avec succès', 'success')
+    except Exception as e:
+        flash(f'Erreur lors de la création du profil: {str(e)}', 'error')
+    
+    return redirect(url_for('weights_page'))
+
+
+@app.route('/profiles/<int:profile_id>/activate', methods=['POST'])
+def activate_profile(profile_id):
+    """Activer un profil."""
+    try:
+        config_manager.set_active_profile(profile_id)
+        flash('Profil activé avec succès', 'success')
+    except Exception as e:
+        flash(f'Erreur lors de l\'activation du profil: {str(e)}', 'error')
+    
+    return redirect(url_for('weights_page'))
+
+
+@app.route('/profiles/<int:profile_id>/save', methods=['POST'])
+def save_to_profile(profile_id):
+    """Sauvegarder les poids actuels dans un profil."""
+    try:
+        config_manager.save_current_weights_to_profile(profile_id)
+        flash('Poids sauvegardés dans le profil', 'success')
+    except Exception as e:
+        flash(f'Erreur lors de la sauvegarde: {str(e)}', 'error')
+    
+    return redirect(url_for('weights_page'))
+
+
+@app.route('/profiles/<int:profile_id>/delete', methods=['POST'])
+def delete_profile(profile_id):
+    """Supprimer un profil."""
+    try:
+        config_manager.delete_weight_profile(profile_id)
+        flash('Profil supprimé avec succès', 'success')
+    except Exception as e:
+        flash(f'Erreur lors de la suppression: {str(e)}', 'error')
+    
+    return redirect(url_for('weights_page'))
+
+
+@app.route('/profiles/<int:profile_id>/update', methods=['POST'])
+def update_profile(profile_id):
+    """Mettre à jour les informations d'un profil."""
+    try:
+        name = request.form.get('profile_name')
+        description = request.form.get('profile_description')
+        
+        if name:
+            config_manager.update_profile_info(profile_id, name=name, description=description)
+            flash('Profil mis à jour avec succès', 'success')
+        else:
+            flash('Le nom du profil est requis', 'error')
+    except Exception as e:
+        flash(f'Erreur lors de la mise à jour: {str(e)}', 'error')
+    
+    return redirect(url_for('weights_page'))
 
 
 if __name__ == '__main__':
